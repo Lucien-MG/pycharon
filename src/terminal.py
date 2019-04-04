@@ -12,7 +12,7 @@ class Terminal:
         exit = False
         cmd = ""
 
-        completer = MyCompleter(["recvfile", "connect"])
+        completer = MyCompleter(dir(self.pc))
         readline.set_completer(completer.complete)
         readline.parse_and_bind('tab: complete')
 
