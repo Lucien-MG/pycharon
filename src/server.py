@@ -79,15 +79,18 @@ class Server:
         print("Server end.")
 
     def sendfile(self, clientID, file_path):
-        file = open(file_path, "rb")
-        lines = file.readlines()
-        file.close()
+        clientID = int(clientID)                                                
+        filesize = os.path.getsize(file_path)                                   
 
-        print("Sending file...")
+        file = open(file_path, "rb")                                            
+        lines = file.readlines()                                                
+        file.close()                                                            
 
-        for l in lines:
-            self.client_list[int(clientID)][0].send(l)
+        self.client_list[clientID][0].send(str(filesize).encode())         
 
-        self.client_list[int(clientID)][0].send(b"end")
+        print("Sending file...")                                                
+
+        for l in lines:                                                         
+            self.client_list[clientID][0].send(l)                          
 
         print("File transmited.")
