@@ -29,15 +29,13 @@ class Client:
         data = b" "
         f = open(self.path_save_file + file_name, "wb")
 
-        while data != b"end":
+        filesize = int(self.connexion.recv(4096).decode())
+
+        while filesize > 0:
             print(data)
             data = self.connexion.recv(4096)
+            filesize -= len(data)
             f.write(data)
 
         f.close()
-        print("File receve!")
-
-
-
-
-        
+        print("File recieve!")

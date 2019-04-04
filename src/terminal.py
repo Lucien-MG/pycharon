@@ -1,5 +1,8 @@
 #!/usr/bin/python3.6
 
+import readline
+from completer import MyCompleter
+
 class Terminal:
 
     def __init__(self, python_class):
@@ -8,6 +11,10 @@ class Terminal:
     def run(self):
         exit = False
         cmd = ""
+
+        completer = MyCompleter(["recvfile", "connect"])
+        readline.set_completer(completer.complete)
+        readline.parse_and_bind('tab: complete')
 
         while exit != True:
             cmd = input("> ")
