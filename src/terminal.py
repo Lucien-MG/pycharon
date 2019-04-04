@@ -51,5 +51,5 @@ class Terminal:
             elif nbarg == 3:
                 getattr(self.pc, args[0]) (args[1], args[2])
                 return 0
-        except AttributeError:
-            print(args[0] + ": command not found")
+        except Exception as e:
+            print(e)
