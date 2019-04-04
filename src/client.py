@@ -27,15 +27,34 @@ class Client:
 
     def recvfile(self, file_name = ""):
         data = b" "
+
+        metadata = self.connexion.recv(4096).decode()
+
+        file_data = metadata.split('/')
+
+        if file_name == "":
+            file_name = file_data[0]
+
+        print("Do you want to receive this " + file_data[1] + ":\n" + file_data[0])
+
+        test = input("\n[Y/n]")
+
+        if test.lower() == "yes"  or test.lower() == "y":
+            self.connexion.send(b"Y")
+        else:
+            self.connexion.send(b"N")
+            return
+
         f = open(self.path_save_file + file_name, "wb")
 
-        filesize = int(self.connexion.recv(4096).decode())
+        file_size = int(file_data[2])
 
-        while filesize > 0:
-            print(data)
-            data = self.connexion.recv(4096)
-            filesize -= len(data)
-            f.write(data)
+        if file_data[1] == "file":
+            while file_size > 0:
+                print(data)
+                data = self.connexion.recv(4096)
+                file_size -= len(data)
+                f.write(data)
 
         f.close()
-        print("File recieve!")
+        print("File received!")
