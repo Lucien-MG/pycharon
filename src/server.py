@@ -79,14 +79,24 @@ class Server:
         print("Server end.")
 
     def sendfile(self, clientID, file_path):
-        clientID = int(clientID)                                                
-        filesize = os.path.getsize(file_path)                                   
+        clientID = int(clientID)
+
+        file_name = os.path.basename(file_path)
+        file_type = "file" 
+        file_size = os.path.getsize(file_path)
+
+        metadata = str(file_name) + "/" + str(file_type) + "/" + str(file_size)                                                
+
+        self.client_list[clientID][0].send(str(metadata).encode())    
+
+        response = self.client_list[clientID][0].recv(4096)
+
+        if response == b"N":
+            return 
 
         file = open(file_path, "rb")                                            
         lines = file.readlines()                                                
-        file.close()                                                            
-
-        self.client_list[clientID][0].send(str(filesize).encode())         
+        file.close()
 
         print("Sending file...")                                                
 

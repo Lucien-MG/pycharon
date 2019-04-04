@@ -15,10 +15,19 @@ class Terminal:
         completer = MyCompleter(dir(self.pc))
         readline.set_completer(completer.complete)
         readline.parse_and_bind('tab: complete')
+        readline.set_history_length(100)
+
+        try:
+            readline.read_history_file("./.history")
+        except:
+            readline.write_history_file("./.history")
+            print("Create history.")
 
         while exit != True:
             cmd = input("> ")
             exit = self.handler(cmd + "\n")
+
+        readline.append_history_file(50, "./.history")
 
     def parse(self, cmd):
         args = []
@@ -52,4 +61,7 @@ class Terminal:
                 getattr(self.pc, args[0]) (args[1], args[2])
                 return 0
         except Exception as e:
-            print(e)
+            print(e.errno)
+            print(e.filename)
+            print(e.strerror)
+
