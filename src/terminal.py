@@ -5,29 +5,32 @@ from completer import MyCompleter
 
 class Terminal:
 
-    def __init__(self, python_class):
-        self.pc = python_class
+    def __init__(self, python_class, history_name = "./.history", history_length = 100):
+        self.python_class = python_class
+        self.completer = MyCompleter(dir(python_class))
+        self.history_name = history_name
+        self.history_length = history_length
+
+        readline.set_completer(self.completer.complete)
+        readline.parse_and_bind('tab: complete')
+
+        readline.set_history_length(history_length)
+
+        try:
+            readline.read_history_file(history_name)
+        except:
+            readline.write_history_file(history_name)
+
 
     def run(self):
         exit = False
         cmd = ""
 
-        completer = MyCompleter(dir(self.pc))
-        readline.set_completer(completer.complete)
-        readline.parse_and_bind('tab: complete')
-        readline.set_history_length(100)
-
-        try:
-            readline.read_history_file("./.history")
-        except:
-            readline.write_history_file("./.history")
-            print("Create history.")
-
         while exit != True:
             cmd = input("> ")
             exit = self.handler(cmd + "\n")
 
-        readline.append_history_file(50, "./.history")
+        readline.append_history_file(self.history_length, self.history_name)
 
     def parse(self, cmd):
         args = []
@@ -61,7 +64,5 @@ class Terminal:
                 getattr(self.pc, args[0]) (args[1], args[2])
                 return 0
         except Exception as e:
-            print(e.errno)
-            print(e.filename)
-            print(e.strerror)
+            print(e)
 
