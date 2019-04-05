@@ -2,6 +2,10 @@
 
 import os 
 import socket as sck
+import json
+
+from src.serverprocess import ServerProcess 
+
 import time 
 import threading
 
@@ -14,19 +18,18 @@ class Server:
         self.host = self.getlocalip()
         self.port = port
 
-        self.nb_client = 1
-
         self.server_directory = serv_dir
-
         self.client_list = []
 
         # Initiate connexion.
         self.connexion = sck.socket(sck.AF_INET, sck.SOCK_STREAM)
-        self.listener = ServerListener(self.connexion, self.client_list)
+        self.serverlistener = ServerListener(self.connexion, self.client_list)
+        #self.process = ServerProcess(self.connexion)
 
     def getlocalip(self):
         s = sck.socket(sck.AF_INET, sck.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
+        # connect() for UDP doesn't send packets
+        s.connect(('8.8.8.8', 1)) 
         ip = s.getsockname()[0]
         s.close()
         return ip
@@ -49,9 +52,6 @@ class Server:
             print("[" + str(id) + "]: ",client[1])
             id += 1
 
-    def set_client_number(self, nb_client):
-        self.nb_client = nb_client
-
     def start(self):
         """ Start the python server """
         bind = False
@@ -68,39 +68,75 @@ class Server:
 
                 print("Try another port: " + str(self.port))
 
-        self.listener.start()
+        self.serverlistener.start()
+        #self.process.run(p_name="listener", p_args = (self.connexion, self.client_list))
 
     def runterminal(self):
         term = Terminal(self)
         term.run()
 
     def close(self):
+        self.process.close("listener")
         self.connexion.close()
         print("Server end.")
 
-    def sendfile(self, clientID, file_path):
+    def buildmetadata(self, path):
+        metadata  = {}
+        metadata["name"] = os.path.basename(path)
+
+        if os.path.isdir(path):
+            metadata["type"] = "dir"
+            underdata = {}
+            for o in os.listdir(path):
+                underdata[o] = self.buildmetadata(os.path.join(path,o))
+
+            metadata["content"] = underdata
+        else:
+            metadata["type"] = "file"
+            metadata["size"] = str(os.path.getsize(path))
+
+        return metadata
+
+    def send(self, clientID = "all", path = "./"):
         clientID = int(clientID)
 
-        file_name = os.path.basename(file_path)
-        file_type = "file" 
-        file_size = os.path.getsize(file_path)
+        objectdata = self.buildmetadata(path)
+        metadata = json.dumps(objectdata).encode()
 
-        metadata = str(file_name) + "/" + str(file_type) + "/" + str(file_size)                                                
+        print(objectdata)
 
-        self.client_list[clientID][0].send(str(metadata).encode())    
-
+        self.client_list[clientID][0].send(metadata)
         response = self.client_list[clientID][0].recv(4096)
-
+    
         if response == b"N":
             return 
 
+        if objectdata["type"] == "dir":
+            self.senddir(clientID, path, objectdata)
+        else:
+            self.sendfile(clientID, path)
+        return 
+
+    def senddir(self, clientID, path, objectdata):
+        print(path)
+        content = objectdata["content"]
+
+        for o in content:
+            if content[o]["type"] == "file":
+                self.sendfile(clientID, os.path.join(path, content[o]["name"]))
+            else:
+                self.senddir(clientID, os.path.join(path, content[o]["name"]), content[o])
+
+    def sendfile(self, clientID, file_path):                                               
         file = open(file_path, "rb")                                            
         lines = file.readlines()                                                
         file.close()
 
-        print("Sending file...")                                                
+        print("Sending file: ", file_path)                                                
 
         for l in lines:                                                         
-            self.client_list[clientID][0].send(l)                          
+            self.client_list[clientID][0].send(l)    
+
+        time.sleep(0.1)                      
 
         print("File transmited.")
