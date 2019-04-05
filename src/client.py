@@ -2,12 +2,15 @@
 
 import socket as sck
 from terminal import Terminal
+import json
+import os
 
 class Client:
 
     def __init__(self):
         self.path_save_file = "./test_recv/"
         self.connexion = sck.socket(sck.AF_INET, sck.SOCK_STREAM)
+        self.term = Terminal(self)
 
     def setPathToSaveFile(self, path):
         self.path_save_file = path
@@ -22,39 +25,95 @@ class Client:
             print("Invalid arguments.")
 
     def runterminal(self):
-        term = Terminal(self)
-        term.run()
+        self.term.run()
 
-    def recvfile(self, file_name = ""):
+    """def reload(self):
+        del self.term
+        self.term = Terminal(self)
+        self.term.run()
+        print("reloaded")"""
+
+    def recv(self, file_name = ""):
+        metadata_tmp = self.connexion.recv(4096).decode()
+
+        metadata = json.loads(metadata_tmp)
+
+        if file_name != "":
+            metadata["name"] = file_name
+
+        print("Do you want to receive this " + metadata["type"] + ":\n" + metadata["name"])
+
+        test = False
+
+        while not test:
+            ans = input("\n[Y/n]")
+            if ans.lower() == "yes"  or ans.lower() == "y":
+                if os.path.exists(os.path.join(self.path_save_file, metadata["name"])):
+                    print("The received " + metadata["type"] +
+                        " already exists. Do you want to delete it ?")
+                    
+                    test2 = False
+
+                    while not test2:
+                        ans = input("\n[Y/n]")
+
+                        if ans.lower() == "yes"  or ans.lower() == "y":
+                            os.system("rm -Rf " + os.path.join(self.path_save_file, metadata["name"]))
+                            test2 = True 
+
+                        elif ans.lower() == "no" or ans.lower() == "n":
+                            self.connexion.send(b"N")
+                            test2= True
+
+                            return
+
+                self.connexion.send(b"Y")
+                test = True
+
+                if metadata["type"] == "file":
+                    self.recvfile(metadata, self.path_save_file)
+                    print("File received!")
+
+                elif metadata["type"] == "dir":
+                    self.recvdir(metadata, self.path_save_file)
+                    print("Folder received!")
+
+                else:
+                    print("Error: Wrong data type sent")
+
+            elif ans.lower() == "no" or ans.lower() == "n":
+                self.connexion.send(b"N")
+                test = True
+
+                return
+
+
+    def recvfile(self, metadata, path):
+        f = open(path, "wb")
         data = b" "
 
-        metadata = self.connexion.recv(4096).decode()
+        file_size = int(metadata["size"])
 
-        file_data = metadata.split('/')
-
-        if file_name == "":
-            file_name = file_data[0]
-
-        print("Do you want to receive this " + file_data[1] + ":\n" + file_data[0])
-
-        test = input("\n[Y/n]")
-
-        if test.lower() == "yes"  or test.lower() == "y":
-            self.connexion.send(b"Y")
-        else:
-            self.connexion.send(b"N")
-            return
-
-        f = open(self.path_save_file + file_name, "wb")
-
-        file_size = int(file_data[2])
-
-        if file_data[1] == "file":
-            while file_size > 0:
-                print(data)
-                data = self.connexion.recv(4096)
-                file_size -= len(data)
-                f.write(data)
+        while file_size > 0:
+            print(data)
+            data = self.connexion.recv(4096)
+            file_size -= len(data)
+            f.write(data)
 
         f.close()
-        print("File received!")
+
+    def recvdir(self, metadata, path):
+        if metadata != {}:
+            if metadata["type"] == "dir":
+                content = metadata["content"]
+
+                path = os.path.join(path, metadata["name"])
+                os.makedirs(path)
+
+                for o in content:
+                    self.recvdir(content[o], path)
+            elif metadata["type"] == "file":
+                path = os.path.join(path, metadata["name"])
+                self.recvfile(metadata, path)
+            else:
+                print("Error: Wrong data type sent")
