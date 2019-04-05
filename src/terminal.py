@@ -47,21 +47,18 @@ class Terminal:
 
     def handler(self, cmd):
         args = self.parse(cmd)
-        nbarg = len(args)
+
+        if len(args) == 0:
+            return 0
+
+        command = args.pop(0)
+        args = tuple(args)
 
         try:
-            if nbarg == 0:
-                return 0
-            elif args[0] == "q":
+            if command == "q":
                 return 1
-            elif nbarg == 1:
-                getattr(self.pc, args[0]) ()
-                return 0
-            elif nbarg == 2:
-                getattr(self.pc, args[0]) (args[1])
-                return 0
-            elif nbarg == 3:
-                getattr(self.pc, args[0]) (args[1], args[2])
+            else:
+                getattr(self.python_class, command) (*args)
                 return 0
         except Exception as e:
             print(e)
