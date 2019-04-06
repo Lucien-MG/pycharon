@@ -128,15 +128,22 @@ class Server:
                 self.senddir(clientID, os.path.join(path, content[o]["name"]), content[o])
 
     def sendfile(self, clientID, file_path):                                               
-        file = open(file_path, "rb")                                            
-        lines = file.readlines()                                                
-        file.close()
-
         print("Sending file: ", file_path)                                                
 
-        for l in lines:                                                         
-            self.client_list[clientID][0].send(l)    
+        with open(file_path, "rb") as f:
+            byte = f.read(4096)
+
+            while byte != b"":
+                try:                                                         
+                    self.client_list[clientID][0].send(byte)
+                except BrokenPipeError:
+                    print("Connection interrupted.")
+                    f.close()
+                    break
+
+                byte = f.read(4096)
+
+            f.close()  
 
         time.sleep(0.1)                      
-
         print("File transmited.")
