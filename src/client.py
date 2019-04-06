@@ -4,6 +4,7 @@ import socket as sck
 from terminal import Terminal
 import json
 import os
+import sys
 
 class Client:
 
@@ -26,12 +27,6 @@ class Client:
 
     def runterminal(self):
         self.term.run()
-
-    """def reload(self):
-        del self.term
-        self.term = Terminal(self)
-        self.term.run()
-        print("reloaded")"""
 
     def recv(self, file_name = ""):
         metadata_tmp = self.connexion.recv(4096).decode()
@@ -58,7 +53,7 @@ class Client:
                 test = True
 
                 if metadata["type"] == "file":
-                    self.recvfile(metadata, self.path_save_file)
+                    self.recvfile(metadata, os.path.join(self.path_save_file, metadata["name"]))
                     print("File received!")
 
                 elif metadata["type"] == "dir":
@@ -97,20 +92,38 @@ class Client:
                 self.deldir(os.path.join(path, name))
             os.rmdir(path)
         else:
-            os.rm(path)
+            os.remove(path)
 
     def recvfile(self, metadata, path):
         f = open(path, "wb")
         data = b" "
 
         file_size = int(metadata["size"])
+        count = 0
+        tmp = 0
 
-        while file_size > 0:
-            data = self.connexion.recv(4096)
-            file_size -= len(data)
+        while count < file_size:
+            if tmp % 100 == 0:
+                self.progress(count, file_size)
+
+            data = self.connexion.recv(16384)
+            count += len(data)
+            tmp += 1
+
             f.write(data)
 
+        self.progress(count, file_size)
         f.close()
+
+    def progress(self, count, total, status=''):
+        bar_len = 60
+        filled_len = int(round(bar_len * count / float(total)))
+
+        percents = round(100.0 * count / float(total), 1)
+        bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+        sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+        sys.stdout.flush()
 
     def recvdir(self, metadata, path):
         if metadata != {}:
