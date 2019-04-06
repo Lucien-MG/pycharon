@@ -52,20 +52,7 @@ class Client:
                     print("The received " + metadata["type"] +
                         " already exists. Do you want to delete it ?")
                     
-                    test2 = False
-
-                    while not test2:
-                        ans = input("\n[Y/n]")
-
-                        if ans.lower() == "yes"  or ans.lower() == "y":
-                            os.system("rm -Rf " + os.path.join(self.path_save_file, metadata["name"]))
-                            test2 = True 
-
-                        elif ans.lower() == "no" or ans.lower() == "n":
-                            self.connexion.send(b"N")
-                            test2= True
-
-                            return
+                    self.askconfirmdel(metadata)
 
                 self.connexion.send(b"Y")
                 test = True
@@ -87,6 +74,30 @@ class Client:
 
                 return
 
+    def askconfirmdel(self, metadata):
+        test2 = False
+
+        while not test2:
+            ans = input("\n[Y/n]")
+
+            if ans.lower() == "yes"  or ans.lower() == "y":
+                self.deldir(os.path.join(self.path_save_file, metadata["name"]))
+                print("Directory deleted!")
+                test2 = True 
+
+            elif ans.lower() == "no" or ans.lower() == "n":
+                self.connexion.send(b"N")
+                test2= True
+
+                return
+
+    def deldir(self, path):
+        if os.path.isdir(path):
+            for name in os.listdir(path):
+                self.deldir(os.path.join(path, name))
+            os.rmdir(path)
+        else:
+            os.rm(path)
 
     def recvfile(self, metadata, path):
         f = open(path, "wb")
@@ -95,7 +106,6 @@ class Client:
         file_size = int(metadata["size"])
 
         while file_size > 0:
-            print(data)
             data = self.connexion.recv(4096)
             file_size -= len(data)
             f.write(data)
