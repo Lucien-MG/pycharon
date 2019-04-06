@@ -6,6 +6,8 @@ import json
 import os
 import sys
 
+from src.utils import *
+
 class Client:
 
     def __init__(self):
@@ -104,7 +106,7 @@ class Client:
 
         while count < file_size:
             if tmp % 100 == 0:
-                self.progress(count, file_size)
+                printprogress(count, file_size)
 
             data = self.connexion.recv(16384)
             count += len(data)
@@ -112,18 +114,10 @@ class Client:
 
             f.write(data)
 
-        self.progress(count, file_size)
+        printprogress(count, file_size)
+        print("")
+
         f.close()
-
-    def progress(self, count, total, status=''):
-        bar_len = 60
-        filled_len = int(round(bar_len * count / float(total)))
-
-        percents = round(100.0 * count / float(total), 1)
-        bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-        sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
-        sys.stdout.flush()
 
     def recvdir(self, metadata, path):
         if metadata != {}:

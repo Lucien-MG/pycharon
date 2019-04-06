@@ -4,7 +4,8 @@ import os
 import socket as sck
 import json
 
-from src.serverprocess import ServerProcess 
+from src.serverprocess import ServerProcess
+from src.utils import *
 
 import time 
 import threading
@@ -103,8 +104,6 @@ class Server:
         objectdata = self.buildmetadata(path)
         metadata = json.dumps(objectdata).encode()
 
-        print(objectdata)
-
         self.client_list[clientID][0].send(metadata)
         response = self.client_list[clientID][0].recv(4096)
     
@@ -114,36 +113,40 @@ class Server:
         if objectdata["type"] == "dir":
             self.senddir(clientID, path, objectdata)
         else:
-            self.sendfile(clientID, path)
+            self.sendfile(clientID, path, objectdata["size"])
         return 
 
     def senddir(self, clientID, path, objectdata):
-        print(path)
         content = objectdata["content"]
 
         for o in content:
             if content[o]["type"] == "file":
-                self.sendfile(clientID, os.path.join(path, content[o]["name"]))
+                self.sendfile(clientID, os.path.join(path, content[o]["name"]), content[o]["size"])
             else:
                 self.senddir(clientID, os.path.join(path, content[o]["name"]), content[o])
 
-    def sendfile(self, clientID, file_path):                                               
-        print("Sending file: ", file_path)                                                
+    def sendfile(self, clientID, file_path, size):                                               
+        print("Sending file: ", file_path)
+        size = int(size)
+        chunksize = calculatechunk(size)
+        nbsend = int(size / chunksize) + 1                                     
 
         with open(file_path, "rb") as f:
-            byte = f.read(4096)
-
-            while byte != b"":
+            for i in range(1,nbsend+1):
+                byte = f.read(chunksize)
                 try:                                                         
                     self.client_list[clientID][0].send(byte)
                 except BrokenPipeError:
                     print("Connection interrupted.")
                     f.close()
-                    break
+                    return
 
-                byte = f.read(4096)
+                printprogress(i, nbsend, status="sending")
 
             f.close()  
 
-        time.sleep(0.1)                      
+        # Needed to print after printprogress:
+        print("")
+
+        time.sleep(0.1)           
         print("File transmited.")
