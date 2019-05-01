@@ -4,8 +4,8 @@ import os
 import socket as sck
 import json
 
-from src.serverprocess import ServerProcess
-from src.utils import *
+from serverprocess import ServerProcess
+from utils import *
 
 import time 
 import threading
