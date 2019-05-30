@@ -70,14 +70,13 @@ class Server:
                 print("Try another port: " + str(self.port))
 
         self.serverlistener.start()
-        #self.process.run(p_name="listener", p_args = (self.connexion, self.client_list))
 
     def runterminal(self):
         term = Terminal(self)
         term.run()
 
     def close(self):
-        self.process.close("listener")
+        self.serverlistener.stop_listening()
         self.connexion.close()
         print("Server end.")
 

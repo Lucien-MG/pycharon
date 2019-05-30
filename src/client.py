@@ -1,5 +1,3 @@
-#!/usr/bin/python3.6
-
 import socket as sck
 from terminal import Terminal
 import json
@@ -11,7 +9,7 @@ from src.utils import *
 class Client:
 
     def __init__(self):
-        self.path_save_file = "./test_recv/"
+        self.path_save_file = "./"
         self.connexion = sck.socket(sck.AF_INET, sck.SOCK_STREAM)
         self.term = Terminal(self)
 

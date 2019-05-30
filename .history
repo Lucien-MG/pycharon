@@ -1,0 +1,29 @@
+q
+q
+connect 172.17.19.212 12800
+recv
+y
+q
+q
+start
+infos
+port
+send test_send/a.out
+send 0 test_send/a.out
+q
+q
+q
+connect 172.17.19.212 12800
+recv
+y
+q
+q
+start
+infos
+port
+send test_send/a.out
+send 0 test_send/a.out
+q
+start
+close
+q
