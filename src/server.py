@@ -1,5 +1,3 @@
-#!/usr/bin/python3.6
-
 import os 
 import socket as sck
 import json
@@ -76,7 +74,11 @@ class Server:
         term.run()
 
     def close(self):
+        print("Server end 3.")
         self.serverlistener.stop_listening()
+        print("Server end 1.")
+        self.serverlistener.join(timeout=1)
+        print("Server end. 2")
         self.connexion.close()
         print("Server end.")
 
@@ -97,7 +99,7 @@ class Server:
 
         return metadata
 
-    def send(self, clientID = "all", path = "./"):
+    def send(self, path = "./", clientID = "all"):
         clientID = int(clientID)
 
         objectdata = self.buildmetadata(path)
